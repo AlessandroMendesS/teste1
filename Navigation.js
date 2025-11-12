@@ -3,20 +3,19 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import TelaInicial from './screens/Home';
 import TelaPerfil from './screens/Perfil';
 import TelaLeituraCodigoBarras from './screens/TelaLeituraCodigoBarras';
 import TelaPesquisarFerramentas from './screens/TelaPesquisarFerramentas';
 import LerQRCodes from './screens/LerQRCodes';
 import TelaTemas from './screens/TelaTemas';
-import { useTheme } from './context/ThemeContext';
+import { usarTema } from './context/ContextoTema';
 import Dashboard from './screens/Dashboard';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
 function Tabs() {
-  const { theme } = useTheme();
+  const { theme } = usarTema();
 
   return (
     <Tab.Navigator
@@ -26,7 +25,7 @@ function Tabs() {
         tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: theme.primary,
         tabBarInactiveTintColor: theme.text,
-        tabBarStyle: { ...estilos.bottomBar, backgroundColor: theme.card },
+        tabBarStyle: { ...estilosBarra.barraInferior, backgroundColor: theme.card },
       }}
     >
       <Tab.Screen
@@ -88,8 +87,8 @@ export default function AppNavigator() {
   );
 }
 
-const estilos = StyleSheet.create({
-  bottomBar: {
+const estilosBarra = StyleSheet.create({
+  barraInferior: {
     position: 'absolute',
     bottom: 16,
     left: 16,

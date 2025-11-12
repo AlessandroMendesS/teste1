@@ -1,10 +1,10 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, StatusBar, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../context/ThemeContext";
+import { usarTema } from "../context/ContextoTema";
 
 export default function TelaTemas({ navigation }) {
-  const { theme, isDarkMode, toggleTheme } = useTheme();
+  const { theme, isDarkMode, toggleTheme } = usarTema();
 
   const renderOpcaoTema = (tema, icone) => (
     <TouchableOpacity

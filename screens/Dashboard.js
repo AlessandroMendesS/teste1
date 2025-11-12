@@ -13,17 +13,17 @@ import {
   Platform
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useTheme } from '../context/ThemeContext';
-import { useAuth } from '../context/AuthContext';
+import { usarTema } from '../context/ContextoTema';
+import { usarAutenticacao } from '../context/ContextoAutenticacao';
 import { useNavigation } from '@react-navigation/native';
-import supabase from '../api/supabaseClient';
-import { apiClient } from '../api/apiService';
+import supabase from '../api/clienteSupabase';
+import clienteApi from '../api/servicoApi';
 
 const { width: screenWidth } = Dimensions.get('window');
 
 export default function Dashboard({ navigation }) {
-  const { theme } = useTheme();
-  const { user } = useAuth();
+  const { theme } = usarTema();
+  const { user } = usarAutenticacao();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState({
@@ -661,5 +661,36 @@ const styles = StyleSheet.create({
     fontSize: 14,
     opacity: 0.6,
     paddingVertical: 20,
+  },
+  quickActionsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    gap: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
+  quickActionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    gap: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+  },
+  quickActionText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFF',
   },
 });

@@ -1,12 +1,11 @@
 import React, { useEffect } from 'react';
 import { View, Image, StyleSheet, StatusBar } from 'react-native';
-import { useTheme } from '../context/ThemeContext';
+import { usarTema } from '../context/ContextoTema';
 
 export default function TelaInicial({ navigation }) {
-  const { theme } = useTheme();
+  const { theme } = usarTema();
 
   useEffect(() => {
-    // Apenas aguardar e seguir para a próxima tela
     const timer = setTimeout(() => {
       navigation.replace('BoasVindas');
     }, 2000);

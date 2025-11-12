@@ -17,32 +17,26 @@ import {
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useNavigation, useIsFocused, useFocusEffect } from '@react-navigation/native';
-import { useTheme } from '../context/ThemeContext';
+import { usarTema } from '../context/ContextoTema';
 
-// Código de barras do crachá autorizado por padrão
 const CRACHA_AUTORIZADO_PADRAO = '123456789';
 const { width, height } = Dimensions.get('window');
-
-// Definir dimensões do viewfinder aqui para que estejam disponíveis para scanLineStyle
 const viewfinderWidth = width * 0.8;
 const viewfinderHeight = height * 0.3;
 const cornerSize = 30;
 const cornerBorderWidth = 5;
 
 export default function TelaLeituraCodigoBarras() {
-  const { theme } = useTheme();
+  const { theme } = usarTema();
   const navigation = useNavigation();
-  const isFocused = useIsFocused(); // Hook para verificar se a tela está em foco
+  const isFocused = useIsFocused();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [showUnauthorizedMessage, setShowUnauthorizedMessage] = useState(false);
-  const unauthorizedTimerRef = useRef(null); // Ref para o timer
-  const [cameraKey, setCameraKey] = useState(Date.now()); // Para forçar o remount da CameraView
+  const unauthorizedTimerRef = useRef(null);
+  const [cameraKey, setCameraKey] = useState(Date.now());
 
-  // Animação da linha de scan
   const scanLineAnimation = useRef(new Animated.Value(0)).current;
-
-  // Reset completo quando a tela ganha foco
   useFocusEffect(
     React.useCallback(() => {
       console.log('Tela ganhou foco - resetando scanner');
@@ -58,7 +52,6 @@ export default function TelaLeituraCodigoBarras() {
   );
 
   useEffect(() => {
-    // Solicitar permissão da câmera quando o componente montar
     if (!permission?.granted) {
       requestPermission();
     }
@@ -79,7 +72,7 @@ export default function TelaLeituraCodigoBarras() {
   };
 
   const startScanLineAnimation = () => {
-    scanLineAnimation.setValue(0); // Reseta a posição da linha
+      scanLineAnimation.setValue(0);
     Animated.loop(
       Animated.sequence([
         Animated.timing(scanLineAnimation, {
@@ -193,30 +186,25 @@ export default function TelaLeituraCodigoBarras() {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar barStyle={theme.dark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
-      {/* Botão de voltar flutuante */}
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
         <Ionicons name="arrow-back" size={28} color={theme.text} />
       </TouchableOpacity>
 
-      {/* Botão de reset manual */}
       <TouchableOpacity style={styles.resetButton} onPress={allowNewScanAttempt}>
         <Ionicons name="refresh" size={24} color={theme.text} />
       </TouchableOpacity>
 
-      {/* Status do scanner */}
       <View style={styles.statusContainer}>
         <Text style={[styles.statusText, { color: theme.text, backgroundColor: theme.card }]}>
           Status: {scanned ? 'Aguardando reset' : 'Pronto para scan'}
         </Text>
       </View>
 
-      {/* Instrução e ícone */}
       <View style={styles.instructionContainer}>
         <MaterialCommunityIcons name="barcode-scan" size={48} color="#fff" style={{ marginBottom: 8 }} />
         <Text style={styles.instructionText}>Aponte para o código de barras do crachá para adicionar a ferramenta</Text>
       </View>
 
-      {/* Overlay escurecido com viewfinder destacado */}
       <CameraView
         key={cameraKey}
         onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
@@ -232,20 +220,16 @@ export default function TelaLeituraCodigoBarras() {
         style={StyleSheet.absoluteFillObject}
       />
       <View style={styles.overlay} pointerEvents="none">
-        {/* Viewfinder */}
         <View style={styles.viewfinderContainer}>
           <View style={[styles.viewfinder, { borderColor: theme.primary }]}>
-            {/* Cantos coloridos */}
             <View style={[styles.corner, styles.topLeft, { borderColor: theme.primary }]} />
             <View style={[styles.corner, styles.topRight, { borderColor: theme.primary }]} />
             <View style={[styles.corner, styles.bottomLeft, { borderColor: theme.primary }]} />
             <View style={[styles.corner, styles.bottomRight, { borderColor: theme.primary }]} />
-            {/* Linha de scan animada */}
             <Animated.View style={[styles.scanLine, scanLineStyle, { backgroundColor: theme.primary }]} />
           </View>
         </View>
       </View>
-      {/* Mensagem de não autorizado */}
       {showUnauthorizedMessage && (
         <View style={styles.unauthorizedMessageContainer}>
           <Text style={[styles.unauthorizedMessageText, { backgroundColor: theme.error, color: theme.buttonText }]}>Crachá não autorizado</Text>

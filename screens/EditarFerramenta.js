@@ -7,8 +7,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode as atob } from 'base-64';
-import { useTheme } from '../context/ThemeContext';
-import supabase from '../api/supabaseClient';
+import { usarTema } from '../context/ContextoTema';
+import supabase from '../api/clienteSupabase';
 
 const categoriasLista = [
   { id: '1', nome: 'Furadeiras', icone: 'build-outline' },
@@ -38,7 +38,7 @@ const InputField = ({ icon, placeholder, value, onChangeText, keyboardType = 'de
 
 export default function EditarFerramenta({ route, navigation }) {
   const { ferramenta: ferramentaInicial } = route.params;
-  const { theme } = useTheme();
+  const { theme } = usarTema();
 
   const [imagem, setImagem] = useState(ferramentaInicial.imagem_url || null);
   const [imagemNova, setImagemNova] = useState(null); // Nova imagem selecionada

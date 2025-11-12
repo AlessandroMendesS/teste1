@@ -8,8 +8,8 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode as atob } from 'base-64';
 import { useNavigation } from '@react-navigation/native';
-import { useAuth } from '../context/AuthContext';
-import supabase from '../api/supabaseClient';
+import { usarAutenticacao } from '../context/ContextoAutenticacao';
+import supabase from '../api/clienteSupabase';
 
 const categoriasLista = [
   { id: '1', nome: 'Furadeiras', icone: 'build-outline' },
@@ -39,7 +39,7 @@ const InputField = ({ icon, placeholder, value, onChangeText, keyboardType = 'de
 
 export default function AdicionarFerramentaSemPatrimonio() {
   const navigation = useNavigation();
-  const { user } = useAuth();
+  const { user } = usarAutenticacao();
 
   const [imagem, setImagem] = useState(null);
   const [nome, setNome] = useState('');
@@ -294,7 +294,7 @@ export default function AdicionarFerramentaSemPatrimonio() {
             )}
           </TouchableOpacity>
 
-          <InputField icon="hammer-outline" placeholder="Nome da Ferramenta" value={nome} onChangeText={setNome} />
+          <InputField icon="hammer-outline" placeholder="Ex: Chave de fenda Phillips" value={nome} onChangeText={setNome} />
           
           <View style={styles.infoBox}>
             <Ionicons name="information-circle-outline" size={20} color="#38A169" />
@@ -303,7 +303,7 @@ export default function AdicionarFerramentaSemPatrimonio() {
             </Text>
           </View>
 
-          <InputField icon="copy-outline" placeholder="Quantidade (padrão: 1)" value={quantidade} onChangeText={(text) => {
+          <InputField icon="copy-outline" placeholder="Ex: 1 (padrão) ou 5" value={quantidade} onChangeText={(text) => {
             // Permitir apenas números e permitir campo vazio
             const num = text.replace(/[^0-9]/g, '');
             setQuantidade(num);
@@ -337,8 +337,8 @@ export default function AdicionarFerramentaSemPatrimonio() {
             <Ionicons name="chevron-down" size={22} color="#7DA38C" />
           </TouchableOpacity>
 
-          <InputField icon="information-circle-outline" placeholder="Detalhes (opcional)" value={detalhes} onChangeText={setDetalhes} multiline numberOfLines={3} />
-          <InputField icon="location-outline" placeholder="Local de Armazenamento" value={local} onChangeText={setLocal} />
+          <InputField icon="information-circle-outline" placeholder="Ex: Ponta Phillips nº 2, cabo emborrachado" value={detalhes} onChangeText={setDetalhes} multiline numberOfLines={3} />
+          <InputField icon="location-outline" placeholder="Ex: Bancada 1, Gaveta A" value={local} onChangeText={setLocal} />
 
           <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={loading}>
             {loading ? (

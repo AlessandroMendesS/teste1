@@ -9,8 +9,8 @@ import TelaCadastro from './screens/TelaCadastro';
 import TelaLogin from './screens/TelaLogin';
 import Tabs from './Navigation';
 import TelaTemas from './screens/TelaTemas';
-import { AuthProvider } from './context/AuthContext';
-import { ThemeProvider } from './context/ThemeContext';
+import { ProvedorAutenticacao } from './context/ContextoAutenticacao';
+import { ProvedorTema } from './context/ContextoTema';
 import AdicionarFerramenta from './screens/AdicionarFerramenta';
 import AdicionarFerramentaSemPatrimonio from './screens/AdicionarFerramentaSemPatrimonio';
 import SelecionarTipoFerramenta from './screens/SelecionarTipoFerramenta';
@@ -19,14 +19,15 @@ import EditarFerramenta from './screens/EditarFerramenta';
 import MeusQRCodes from './screens/MeusQRCodes';
 import Dashboard from './screens/Dashboard';
 import MeusEmprestimos from './screens/MeusEmprestimos';
+import Tutorial from './screens/Tutorial';
 
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (
-    <AuthProvider>
-      <ThemeProvider>
+    <ProvedorAutenticacao>
+      <ProvedorTema>
         <NavigationContainer>
           <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Inicial">
             <Stack.Screen name="Inicial" component={TelaInicial} />
@@ -43,9 +44,10 @@ export default function App() {
             <Stack.Screen name="MeusQRCodes" component={MeusQRCodes} />
             <Stack.Screen name="Dashboard" component={Dashboard} />
             <Stack.Screen name="MeusEmprestimos" component={MeusEmprestimos} />
+            <Stack.Screen name="Tutorial" component={Tutorial} />
           </Stack.Navigator>
         </NavigationContainer>
-      </ThemeProvider>
-    </AuthProvider>
+      </ProvedorTema>
+    </ProvedorAutenticacao>
   );
 }

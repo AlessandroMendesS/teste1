@@ -15,6 +15,6 @@ config.resolver.alias = {
 };
 
 // Configurar plataformas
-config.resolver.platforms = ['native', 'android', 'ios'];
+config.resolver.platforms = ['native', 'android', 'ios', 'web'];
 
 module.exports = config;

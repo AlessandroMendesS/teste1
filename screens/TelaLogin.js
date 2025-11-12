@@ -12,8 +12,8 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-import { useAuth } from "../context/AuthContext"; // Use o hook de autenticação
-import { useTheme } from "../context/ThemeContext";
+import { usarAutenticacao } from "../context/ContextoAutenticacao";
+import { usarTema } from "../context/ContextoTema";
 
 const TelaLogin = () => {
   const [nome, setNome] = useState("");
@@ -23,8 +23,8 @@ const TelaLogin = () => {
   const [erro, setErro] = useState("");
   
   const navigation = useNavigation();
-  const { login } = useAuth(); // Use o método login do contexto de autenticação
-  const { theme } = useTheme();
+  const { login } = usarAutenticacao();
+  const { theme } = usarTema();
 
   const handleLogin = async () => {
     // Limpar erro anterior

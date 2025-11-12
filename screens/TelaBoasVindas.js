@@ -1,15 +1,14 @@
 import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
 import Svg, { Defs, RadialGradient, Stop, Rect } from 'react-native-svg';
-import { useTheme } from '../context/ThemeContext';
+import { usarTema } from '../context/ContextoTema';
 
 export default function BoasVindas({ navigation }) {
-  const { theme } = useTheme();
+  const { theme } = usarTema();
 
   return (
     <View style={[estilos.container, { backgroundColor: theme.background }]}>
       <StatusBar barStyle={theme.dark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
-      {/* Gradiente radial como fundo */}
       <Svg height="150%" width="150%" style={StyleSheet.absoluteFill}>
         <Defs>
           <RadialGradient
@@ -29,16 +28,13 @@ export default function BoasVindas({ navigation }) {
         <Rect x="0" y="0" width="100%" height="100%" fill="url(#grad)" />
       </Svg>
 
-      {/* Imagem */}
       <Image style={estilos.imagem} source={require("../assets/img/inicio.png")} />
 
-      {/* Textos centralizados */}
       <View style={estilos.areaTexto}>
         <Text style={[estilos.textoBemVindo, { color: theme.text }]}>Bem-Vindo(a) ao</Text>
         <Text style={[estilos.toolsearch, { color: theme.text }]}>ToolSearch!</Text>
       </View>
 
-      {/* Botão de alternância */}
       <View style={[estilos.botaoAlternancia, { borderColor: theme.primary, backgroundColor: theme.card }]}>
         <View style={[estilos.deslizador, { backgroundColor: theme.primary }]} />
         <TouchableOpacity

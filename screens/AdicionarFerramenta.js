@@ -8,8 +8,8 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode as atob } from 'base-64';
 import { useNavigation } from '@react-navigation/native';
-import { useAuth } from '../context/AuthContext';
-import supabase from '../api/supabaseClient';
+import { usarAutenticacao } from '../context/ContextoAutenticacao';
+import supabase from '../api/clienteSupabase';
 
 const categoriasLista = [
   { id: '1', nome: 'Furadeiras', icone: 'build-outline' },
@@ -39,7 +39,7 @@ const InputField = ({ icon, placeholder, value, onChangeText, keyboardType = 'de
 
 export default function AdicionarFerramenta() {
   const navigation = useNavigation();
-  const { user } = useAuth();
+  const { user } = usarAutenticacao();
 
   const [imagem, setImagem] = useState(null);
   const [nome, setNome] = useState('');
@@ -54,7 +54,6 @@ export default function AdicionarFerramenta() {
   const [categoriaModalVisivel, setCategoriaModalVisivel] = useState(false);
   const [imagemModalVisivel, setImagemModalVisivel] = useState(false);
 
-  // Compatibilidade entre versões do expo-image-picker
   const MEDIA_IMAGES = (ImagePicker && ImagePicker.MediaType && (ImagePicker.MediaType.Images || ImagePicker.MediaType.Image))
     || (ImagePicker && ImagePicker.MediaTypeOptions && ImagePicker.MediaTypeOptions.Images);
 
@@ -161,19 +160,16 @@ export default function AdicionarFerramenta() {
     
     let imagemUrlSupabase = null;
 
-    // Upload da imagem apenas uma vez (se houver)
     if (imagem) {
       try {
         const imagemNomeUnico = `${Date.now()}_${sanitizeFileName(nome)}.jpg`;
         
-        // Ler arquivo local em base64 e converter para ArrayBuffer
         const base64 = await FileSystem.readAsStringAsync(imagem, { encoding: 'base64' });
         const binary = atob(base64);
         const bytes = new Uint8Array(binary.length);
         for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
         const buffer = bytes.buffer;
 
-        // Upload para o bucket padronizado
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('ferramentas-imagens')
           .upload(imagemNomeUnico, buffer, {
@@ -186,7 +182,6 @@ export default function AdicionarFerramenta() {
           throw uploadError;
         }
 
-        // Obter a URL pública correta
         const { data: publicUrlData, error: publicUrlError } = supabase.storage
           .from('ferramentas-imagens')
           .getPublicUrl(imagemNomeUnico);
@@ -205,7 +200,6 @@ export default function AdicionarFerramenta() {
       }
     }
 
-    // Criar array de ferramentas com patrimônios sequenciais
     const ferramentasParaCriar = [];
     for (let i = 0; i < qtd; i++) {
       const patrimonioAtual = (patrimonioInicial + i).toString();
@@ -224,7 +218,6 @@ export default function AdicionarFerramenta() {
     }
 
     try {
-      // Inserir todas as ferramentas de uma vez (mais eficiente)
       setProgresso({ atual: qtd, total: qtd }); // Mostrar progresso completo ao inserir em lote
       
       const { data, error } = await supabase
@@ -233,7 +226,6 @@ export default function AdicionarFerramenta() {
         .select();
 
       if (error) {
-        // Se houver erro de duplicação ou outro, tentar inserir uma por uma
         console.warn('Erro ao inserir em lote, tentando uma por uma:', error);
         
         let sucessos = 0;
@@ -270,15 +262,12 @@ export default function AdicionarFerramenta() {
           Alert.alert('Erro', 'Não foi possível cadastrar nenhuma ferramenta. Verifique os números de patrimônio.');
         }
       } else {
-        // Sucesso total
         Alert.alert(
           'Sucesso!', 
           `${qtd} ferramenta(s) cadastrada(s) com sucesso.`,
           [{ text: 'OK', onPress: handleVoltar }]
         );
       }
-      
-      // Limpar formulário
       setImagem(null); 
       setNome(''); 
       setPatrimonio(''); 
@@ -321,10 +310,9 @@ export default function AdicionarFerramenta() {
             )}
           </TouchableOpacity>
 
-          <InputField icon="hammer-outline" placeholder="Nome da Ferramenta" value={nome} onChangeText={setNome} />
-          <InputField icon="document-text-outline" placeholder="Nº de Patrimônio Inicial" value={patrimonio} onChangeText={setPatrimonio} keyboardType="numeric" />
-          <InputField icon="copy-outline" placeholder="Quantidade (padrão: 1)" value={quantidade} onChangeText={(text) => {
-            // Permitir apenas números e permitir campo vazio
+          <InputField icon="hammer-outline" placeholder="Ex: Furadeira de impacto" value={nome} onChangeText={setNome} />
+          <InputField icon="document-text-outline" placeholder="Ex: 12345 (apenas números)" value={patrimonio} onChangeText={setPatrimonio} keyboardType="numeric" />
+          <InputField icon="copy-outline" placeholder="Ex: 1 (padrão) ou 5" value={quantidade} onChangeText={(text) => {
             const num = text.replace(/[^0-9]/g, '');
             setQuantidade(num);
           }} keyboardType="numeric" />
@@ -357,8 +345,8 @@ export default function AdicionarFerramenta() {
             <Ionicons name="chevron-down" size={22} color="#7DA38C" />
           </TouchableOpacity>
 
-          <InputField icon="information-circle-outline" placeholder="Detalhes (opcional)" value={detalhes} onChangeText={setDetalhes} multiline numberOfLines={3} />
-          <InputField icon="location-outline" placeholder="Local de Armazenamento" value={local} onChangeText={setLocal} />
+          <InputField icon="information-circle-outline" placeholder="Ex: Com fio, 1000W, para madeira" value={detalhes} onChangeText={setDetalhes} multiline numberOfLines={3} />
+          <InputField icon="location-outline" placeholder="Ex: Armário 3, Gaveta B" value={local} onChangeText={setLocal} />
 
           <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={loading}>
             {loading ? (
@@ -370,7 +358,6 @@ export default function AdicionarFerramenta() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Modal para escolher Categoria */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -400,7 +387,6 @@ export default function AdicionarFerramenta() {
         </TouchableOpacity>
       </Modal>
 
-      {/* Modal para escolher Imagem */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -445,7 +431,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   backButton: {
-    padding: 5, // Aumentar área de toque
+    padding: 5, 
   },
   headerTitle: {
     fontSize: 22,
@@ -455,7 +441,7 @@ const styles = StyleSheet.create({
   },
   imagePicker: {
     height: 180,
-    backgroundColor: '#E8F5E9', // Verde bem claro
+    backgroundColor: '#E8F5E9', 
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
@@ -467,7 +453,7 @@ const styles = StyleSheet.create({
   imagePreview: {
     width: '100%',
     height: '100%',
-    borderRadius: 10, // Um pouco menos que o container para não cortar bordas
+    borderRadius: 10, 
   },
   imagePlaceholder: {
     justifyContent: 'center',
@@ -488,7 +474,7 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
     paddingHorizontal: 15,
     marginBottom: 15,
-    minHeight: 55, // Altura mínima
+    minHeight: 55, 
   },
   inputIcon: {
     marginRight: 10,
@@ -497,10 +483,10 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     color: '#2D3748',
-    paddingVertical: 12, // Ajustar padding interno
+    paddingVertical: 12, 
   },
   submitButton: {
-    backgroundColor: '#38A169', // Verde principal
+    backgroundColor: '#38A169', 
     borderRadius: 10,
     paddingVertical: 15,
     alignItems: 'center',
@@ -523,15 +509,15 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'flex-end', // Alinha o modal na parte inferior
+    justifyContent: 'flex-end', 
   },
   modalContent: {
     backgroundColor: '#FFFFFF',
     paddingTop: 20,
-    paddingBottom: Platform.OS === 'ios' ? 30 : 20, // Padding inferior para safe area no iOS
+    paddingBottom: Platform.OS === 'ios' ? 30 : 20,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: '60%', // Limita a altura do modal
+    maxHeight: '60%', 
   },
   imageModalContent: {
     maxHeight: '40%',
@@ -575,7 +561,7 @@ const styles = StyleSheet.create({
   },
   modalCloseButtonText: {
     fontSize: 16,
-    color: '#E53E3E', // Vermelho para fechar/cancelar
+    color: '#E53E3E', 
     fontWeight: '500',
   },
   infoBox: {

@@ -8,8 +8,8 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode as atob } from 'base-64';
 import { useNavigation } from '@react-navigation/native';
-import { usarAutenticacao } from '../context/ContextoAutenticacao';
-import supabase from '../api/clienteSupabase';
+import { useAuth } from '../context/AuthContext';
+import supabase from '../api/supabaseClient';
 
 const categoriasLista = [
   { id: '1', nome: 'Furadeiras', icone: 'build-outline' },
@@ -39,7 +39,7 @@ const InputField = ({ icon, placeholder, value, onChangeText, keyboardType = 'de
 
 export default function AdicionarFerramentaSemPatrimonio() {
   const navigation = useNavigation();
-  const { user } = usarAutenticacao();
+  const { user } = useAuth();
 
   const [imagem, setImagem] = useState(null);
   const [nome, setNome] = useState('');

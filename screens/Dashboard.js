@@ -13,17 +13,17 @@ import {
   Platform
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { usarTema } from '../context/ContextoTema';
-import { usarAutenticacao } from '../context/ContextoAutenticacao';
+import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
-import supabase from '../api/clienteSupabase';
-import clienteApi from '../api/servicoApi';
+import supabase from '../api/supabaseClient';
+import { apiClient } from '../api/apiService';
 
 const { width: screenWidth } = Dimensions.get('window');
 
 export default function Dashboard({ navigation }) {
-  const { theme } = usarTema();
-  const { user } = usarAutenticacao();
+  const { theme } = useTheme();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState({

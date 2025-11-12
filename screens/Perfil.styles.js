@@ -2,6 +2,7 @@ import { StyleSheet } from "react-native";
 
 export const estilos = StyleSheet.create({
   container: {
+    // flex: 1, // Remover o flex:1 daqui pois já estará na SafeAreaView
     backgroundColor: "#f2f2f2",
   },
   header: {
@@ -31,7 +32,7 @@ export const estilos = StyleSheet.create({
   userEmail: {
     fontSize: 16,
     color: "#bdc3c7",
-    marginRight: 10,
+    marginRight: 10, // Espaço entre o email e o botão de editar
   },
   emailContainer: {
     flexDirection: "row",
@@ -93,7 +94,7 @@ export const estilos = StyleSheet.create({
     marginTop: 20,
     alignItems: "center",
     justifyContent: "center",
-    flexDirection: "row",
+    flexDirection: "row", // Para alinhar texto e ícone
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -106,7 +107,7 @@ export const estilos = StyleSheet.create({
     fontWeight: "bold",
   },
   editProfileButton: {
-    backgroundColor: "#007bff",
+    backgroundColor: "#007bff", // Azul para editar
     paddingVertical: 12,
     paddingHorizontal: 25,
     borderRadius: 8,

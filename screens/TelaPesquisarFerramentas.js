@@ -2,16 +2,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, Image,
   SafeAreaView, StatusBar, FlatList, ActivityIndicator,
-  Animated, Easing, Platform, Alert
+  Animated, Easing, Platform, Alert // Adicionar Platform e Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import supabase from '../api/clienteSupabase';
-import { usarTema } from '../context/ContextoTema';
-import { usarAutenticacao } from '../context/ContextoAutenticacao';
-import { agruparFerramentas, buscarFerramentaDisponivel } from '../utils/agrupamentoFerramentas';
-import { servicoFerramenta } from '../api/servicoApi';
+import supabase from '../api/supabaseClient';
+import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
+import { agruparFerramentas, buscarFerramentaDisponivel } from '../utils/toolGrouping';
+import { toolService } from '../api/apiService';
 
+// Grupos de ferramentas com todos os que existem no AdicionarFerramenta.js
 const grupos = [
   { id: '1', nome: 'Furadeiras', imagem: require('../assets/img/furadeira.png') },
   { id: '2', nome: 'Chaves', imagem: require('../assets/img/chaves.png') },
@@ -22,8 +23,8 @@ const grupos = [
 ];
 
 export default function TelaPesquisarFerramentas({ navigation }) {
-  const { theme } = usarTema();
-  const { user } = usarAutenticacao();
+  const { theme } = useTheme();
+  const { user } = useAuth();
   const [grupoSelecionado, setGrupoSelecionado] = useState(null);
   const [busca, setBusca] = useState('');
   const [ferramentas, setFerramentas] = useState([]);
@@ -32,7 +33,8 @@ export default function TelaPesquisarFerramentas({ navigation }) {
   const [erro, setErro] = useState(null);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedTools, setSelectedTools] = useState([]);
-  const animacaoLista = useRef(new Animated.Value(0)).current;
+  // Para animação de abertura do grupo
+  const animLista = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (!grupoSelecionado && !busca.trim()) {
@@ -40,12 +42,15 @@ export default function TelaPesquisarFerramentas({ navigation }) {
     }
   }, [grupoSelecionado, busca]);
 
+  // Atualizar dados quando a tela receber foco (após voltar de outras telas)
   useFocusEffect(
     React.useCallback(() => {
+      // Quando a tela é focada (ex: ao clicar na aba Home), reseta para a visualização de categorias
       setGrupoSelecionado(null);
       setBusca('');
-      buscarTodasFerramentas();
+      buscarTodasFerramentas(); // Garante que todas as ferramentas sejam carregadas novamente
       return () => {
+        // Opcional: fazer algo quando a tela perde o foco
       };
     }, [])
   );
@@ -53,8 +58,9 @@ export default function TelaPesquisarFerramentas({ navigation }) {
   useEffect(() => {
     if (grupoSelecionado) {
       buscarFerramentasPorCategoria(grupoSelecionado.id);
-      animacaoLista.setValue(0);
-      Animated.timing(animacaoLista, {
+      // Animação suave de entrada da lista
+      animLista.setValue(0);
+      Animated.timing(animLista, {
         toValue: 1,
         duration: 300,
         useNativeDriver: true,
@@ -95,6 +101,7 @@ export default function TelaPesquisarFerramentas({ navigation }) {
       if (error) throw error;
       const ferramentasData = data || [];
       setFerramentas(ferramentasData);
+      // Agrupar ferramentas
       const agrupadas = agruparFerramentas(ferramentasData);
       setFerramentasAgrupadas(agrupadas);
       if (ferramentasData.length === 0) {
@@ -110,6 +117,7 @@ export default function TelaPesquisarFerramentas({ navigation }) {
     }
   };
 
+  // Filtrar ferramentas individuais para busca
   const ferramentasFiltradas = busca.trim()
     ? ferramentas.filter(f =>
       f.nome.toLowerCase().includes(busca.toLowerCase()) ||
@@ -118,6 +126,7 @@ export default function TelaPesquisarFerramentas({ navigation }) {
     )
     : ferramentas;
 
+  // Filtrar e agrupar ferramentas filtradas
   const gruposFiltrados = busca.trim()
     ? agruparFerramentas(ferramentasFiltradas)
     : ferramentasAgrupadas;
@@ -133,6 +142,7 @@ export default function TelaPesquisarFerramentas({ navigation }) {
 
   const limparBuscaEGrupo = () => {
     setBusca('');
+    // Animação de saída (fade out)
     Animated.timing(animLista, {
       toValue: 0,
       duration: 200,
@@ -157,12 +167,12 @@ export default function TelaPesquisarFerramentas({ navigation }) {
             setLoading(true);
             try {
               for (const toolId of selectedTools) {
-                await servicoFerramenta.deletarFerramenta(toolId);
+                await toolService.deleteTool(toolId);
               }
               Alert.alert('Sucesso', `${selectedTools.length} ferramenta(s) excluída(s) com sucesso.`);
               setSelectionMode(false);
               setSelectedTools([]);
-              buscarTodasFerramentas();
+              buscarTodasFerramentas(); // Recarregar a lista
             } catch (error) {
               console.error('Erro ao excluir ferramentas:', error);
               Alert.alert('Erro', 'Falha ao excluir ferramenta(s).');
@@ -198,6 +208,7 @@ export default function TelaPesquisarFerramentas({ navigation }) {
   );
 
   const renderFerramentaItem = ({ item }) => {
+    // Se for um grupo (tem propriedade 'total'), renderizar como grupo
     if (item.total !== undefined) {
       const ferramentaDisponivel = buscarFerramentaDisponivel(item);
       const temDisponivel = item.disponivel > 0;
@@ -207,12 +218,15 @@ export default function TelaPesquisarFerramentas({ navigation }) {
           style={[styles.ferramentaCard, { backgroundColor: theme.card }]}
           activeOpacity={0.8}
           onPress={() => {
+            // Se houver ferramenta disponível, navegar para ela
+            // Caso contrário, mostrar todas as ferramentas do grupo
             if (ferramentaDisponivel) {
               navigation.navigate('DetalheFerramenta', { 
                 ferramenta: ferramentaDisponivel,
                 grupo: item 
               });
             } else {
+              // Navegar para uma tela de seleção de ferramenta do grupo
               navigation.navigate('DetalheFerramenta', { 
                 ferramenta: item.ferramentas[0],
                 grupo: item 
@@ -244,6 +258,7 @@ export default function TelaPesquisarFerramentas({ navigation }) {
       );
     }
     
+    // Renderização para ferramenta individual (fallback)
     return (
     <TouchableOpacity
       style={[styles.ferramentaCard, { backgroundColor: theme.card }]}
@@ -411,7 +426,8 @@ export default function TelaPesquisarFerramentas({ navigation }) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#e6f4ea',
+    // flex: 1, // Remover o flex:1 daqui pois já estará na SafeAreaView
+    backgroundColor: '#e6f4ea', // Fundo verde bem claro
   },
   topo: {
     paddingHorizontal: 20,
@@ -508,16 +524,17 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   listContentContainer: {
-    paddingHorizontal: 10,
-    paddingBottom: 100,
+    paddingHorizontal: 10, // Espaço nas laterais da lista
+    paddingBottom: 100, // Aumentado para não cortar itens no Android
   },
+  // Estilos para Categoria Card
   categoriaCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'space-between', // Para empurrar imagem para a direita
     backgroundColor: '#fff',
     borderRadius: 12,
-    marginHorizontal: 10,
+    marginHorizontal: 10, // Era 20, reduzido para listContentContainer
     marginVertical: 8,
     padding: 18,
     shadowColor: "#000",
@@ -527,15 +544,15 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   categoriaTexto: {
-    fontSize: 20,
+    fontSize: 20, // Aumentado
     fontWeight: '600',
-    color: '#2f855a',
-    flexShrink: 1,
-    marginRight: 10,
+    color: '#2f855a', // Verde escuro
+    flexShrink: 1, // Permite que o texto encolha se necessário
+    marginRight: 10, // Espaço para a imagem
   },
   categoriaImagem: {
-    width: 90,
-    height: 70,
+    width: 90, // Ajustado
+    height: 70, // Ajustado
     borderRadius: 8,
   },
   categoriaImagemPlaceholder: {

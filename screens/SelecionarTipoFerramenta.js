@@ -10,11 +10,11 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { usarTema } from '../context/ContextoTema';
+import { useTheme } from '../context/ThemeContext';
 
 export default function SelecionarTipoFerramenta() {
   const navigation = useNavigation();
-  const { theme } = usarTema();
+  const { theme } = useTheme();
 
   const handleComPatrimonio = () => {
     navigation.navigate('AdicionarFerramenta');

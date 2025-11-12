@@ -9,8 +9,8 @@ import TelaCadastro from './screens/TelaCadastro';
 import TelaLogin from './screens/TelaLogin';
 import Tabs from './Navigation';
 import TelaTemas from './screens/TelaTemas';
-import { ProvedorAutenticacao } from './context/ContextoAutenticacao';
-import { ProvedorTema } from './context/ContextoTema';
+import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import AdicionarFerramenta from './screens/AdicionarFerramenta';
 import AdicionarFerramentaSemPatrimonio from './screens/AdicionarFerramentaSemPatrimonio';
 import SelecionarTipoFerramenta from './screens/SelecionarTipoFerramenta';
@@ -26,8 +26,8 @@ const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (
-    <ProvedorAutenticacao>
-      <ProvedorTema>
+    <AuthProvider>
+      <ThemeProvider>
         <NavigationContainer>
           <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Inicial">
             <Stack.Screen name="Inicial" component={TelaInicial} />
@@ -47,7 +47,7 @@ export default function App() {
             <Stack.Screen name="Tutorial" component={Tutorial} />
           </Stack.Navigator>
         </NavigationContainer>
-      </ProvedorTema>
-    </ProvedorAutenticacao>
+      </ThemeProvider>
+    </AuthProvider>
   );
 }

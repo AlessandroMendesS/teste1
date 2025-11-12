@@ -16,13 +16,13 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
-import { usarAutenticacao } from "../context/ContextoAutenticacao";
-import { usarTema } from "../context/ContextoTema";
+import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext"; // Import useTheme
 import { estilos } from "./Perfil.styles";
 
 export default function TelaPerfil({ navigation }) {
-  const { user, logout, updateUser, updateUserImage } = usarAutenticacao();
-  const { theme } = usarTema();
+  const { user, logout, updateUser, updateUserImage } = useAuth();
+  const { theme } = useTheme(); // Use theme
   const [modalVisivel, setModalVisivel] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editableEmail, setEditableEmail] = useState(user?.email || "");

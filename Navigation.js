@@ -8,14 +8,14 @@ import TelaLeituraCodigoBarras from './screens/TelaLeituraCodigoBarras';
 import TelaPesquisarFerramentas from './screens/TelaPesquisarFerramentas';
 import LerQRCodes from './screens/LerQRCodes';
 import TelaTemas from './screens/TelaTemas';
-import { usarTema } from './context/ContextoTema';
+import { useTheme } from './context/ThemeContext';
 import Dashboard from './screens/Dashboard';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
 function Tabs() {
-  const { theme } = usarTema();
+  const { theme } = useTheme();
 
   return (
     <Tab.Navigator
@@ -25,7 +25,7 @@ function Tabs() {
         tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: theme.primary,
         tabBarInactiveTintColor: theme.text,
-        tabBarStyle: { ...estilosBarra.barraInferior, backgroundColor: theme.card },
+        tabBarStyle: { ...estilos.bottomBar, backgroundColor: theme.card },
       }}
     >
       <Tab.Screen
@@ -87,8 +87,8 @@ export default function AppNavigator() {
   );
 }
 
-const estilosBarra = StyleSheet.create({
-  barraInferior: {
+const estilos = StyleSheet.create({
+  bottomBar: {
     position: 'absolute',
     bottom: 16,
     left: 16,

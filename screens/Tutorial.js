@@ -12,7 +12,7 @@ import {
   Animated
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { usarTema } from '../context/ContextoTema';
+import { useTheme } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -69,7 +69,7 @@ const tutorialSlides = [
 ];
 
 export default function Tutorial({ navigation }) {
-  const { theme } = usarTema();
+  const { theme } = useTheme();
   const [currentSlide, setCurrentSlide] = useState(0);
   const scrollViewRef = useRef(null);
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -110,6 +110,7 @@ export default function Tutorial({ navigation }) {
     return (
       <View key={slide.id} style={[styles.slide, { width: screenWidth }]}>
         <View style={[styles.slideContent, { backgroundColor: theme.background }]}>
+          {/* Ícone animado */}
           <Animated.View
             style={[
               styles.iconContainer,
@@ -122,14 +123,17 @@ export default function Tutorial({ navigation }) {
             <Ionicons name={slide.icon} size={80} color={slide.color} />
           </Animated.View>
 
+          {/* Título */}
           <Text style={[styles.slideTitle, { color: theme.text }]}>
             {slide.title}
           </Text>
 
+          {/* Descrição */}
           <Text style={[styles.slideDescription, { color: theme.text, opacity: 0.8 }]}>
             {slide.description}
           </Text>
 
+          {/* Dicas adicionais baseadas no slide */}
           {slide.id === 1 && (
             <View style={styles.tipContainer}>
               <Ionicons name="bulb" size={20} color={slide.color} />
@@ -192,6 +196,7 @@ export default function Tutorial({ navigation }) {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar barStyle={theme.dark ? "light-content" : "dark-content"} />
       
+      {/* Header */}
       <View style={[styles.header, { backgroundColor: theme.card }]}>
         <TouchableOpacity onPress={handleFinish} style={styles.closeButton}>
           <Ionicons name="close" size={28} color={theme.text} />
@@ -200,6 +205,7 @@ export default function Tutorial({ navigation }) {
         <View style={{ width: 28 }} />
       </View>
 
+      {/* Slides */}
       <ScrollView
         ref={scrollViewRef}
         horizontal
@@ -212,6 +218,7 @@ export default function Tutorial({ navigation }) {
         {tutorialSlides.map((slide, index) => renderSlide(slide, index))}
       </ScrollView>
 
+      {/* Indicadores */}
       <View style={styles.indicatorsContainer}>
         {tutorialSlides.map((_, index) => (
           <View
@@ -227,6 +234,7 @@ export default function Tutorial({ navigation }) {
         ))}
       </View>
 
+      {/* Botões de navegação */}
       <View style={[styles.footer, { backgroundColor: theme.card }]}>
         {currentSlide > 0 && (
           <TouchableOpacity

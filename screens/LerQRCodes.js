@@ -6,16 +6,17 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
-import supabase from '../api/clienteSupabase';
-import { usarTema } from '../context/ContextoTema';
+import supabase from '../api/supabaseClient';
+import { useTheme } from '../context/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
+// Viewfinder quadrado para QR Code (similar proporção ao código de barras)
 const viewfinderSize = width * 0.7;
 const cornerSize = 30;
 const cornerBorderWidth = 5;
 
 export default function LerQRCodes() {
-  const { theme } = usarTema();
+  const { theme } = useTheme();
   const navigation = useNavigation();
   const isFocused = useIsFocused();
   const [permission, requestPermission] = useCameraPermissions();
@@ -23,6 +24,7 @@ export default function LerQRCodes() {
   const [loading, setLoading] = useState(false);
   const [invalidAlertShown, setInvalidAlertShown] = useState(false);
   
+  // Animação da linha de scan
   const scanLineAnimation = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -67,6 +69,7 @@ export default function LerQRCodes() {
     setScanned(true);
     setLoading(true);
     try {
+      // Verificar se começa com "tool-"
       if (!data.startsWith('tool-')) {
         if (!invalidAlertShown) {
           setInvalidAlertShown(true);
@@ -78,13 +81,17 @@ export default function LerQRCodes() {
       }
       setInvalidAlertShown(false);
       
+      // Primeiro, tentar buscar pelo qrcode_url completo (mais confiável)
       let { data: ferramenta, error } = await supabase
         .from('ferramentas')
         .select('*')
         .eq('qrcode_url', data)
         .single();
       
+      // Se não encontrou pelo qrcode_url, tentar extrair o patrimônio
       if (error || !ferramenta) {
+        // Extrair patrimônio do formato: tool-{patrimonio}-{timestamp} ou tool-{patrimonio}-{timestamp}-{index}
+        // Dividir por hífens
         const parts = data.split('-');
         
         if (parts.length < 3) {
@@ -94,9 +101,19 @@ export default function LerQRCodes() {
           return;
         }
         
+        // Remover "tool" (primeiro elemento)
         parts.shift();
         
+        // O formato é: {patrimonio}-{timestamp} ou {patrimonio}-{timestamp}-{index}
+        // O timestamp é sempre o penúltimo ou último elemento (se houver index)
+        // E o index (se existir) é sempre o último elemento e é um número pequeno (0-999)
+        
+        // Estratégia: tentar diferentes combinações de patrimônio
+        // Começar do final e ir removendo elementos até encontrar uma ferramenta
+        
         let ferramentaEncontrada = null;
+        
+        // Tentar diferentes combinações: remover os últimos elementos (timestamp e index)
         for (let removeCount = 1; removeCount <= Math.min(parts.length - 1, 3); removeCount++) {
           const patrimonioParts = parts.slice(0, parts.length - removeCount);
           const patrimonio = patrimonioParts.join('-');
@@ -125,6 +142,7 @@ export default function LerQRCodes() {
         ferramenta = ferramentaEncontrada;
       }
       
+      // Navegar para a tela de detalhes da ferramenta
       navigation.navigate('DetalheFerramenta', { ferramenta });
     } catch (err) {
       console.error('Erro ao processar QR Code:', err);
@@ -172,38 +190,46 @@ export default function LerQRCodes() {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar barStyle={theme.dark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
+      {/* Botão de voltar flutuante */}
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
         <Ionicons name="arrow-back" size={28} color={theme.text} />
       </TouchableOpacity>
 
+      {/* Status do scanner */}
       <View style={styles.statusContainer}>
         <Text style={[styles.statusText, { color: theme.text, backgroundColor: theme.card }]}>
           Status: {scanned ? 'Processando...' : 'Pronto para scan'}
         </Text>
       </View>
 
+      {/* Instrução e ícone */}
       <View style={styles.instructionContainer}>
         <Ionicons name="qr-code-outline" size={48} color="#fff" style={{ marginBottom: 8 }} />
         <Text style={styles.instructionText}>Aponte para o QR Code da ferramenta</Text>
       </View>
 
+      {/* Overlay escurecido com viewfinder destacado */}
       <CameraView
         onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
         barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
         style={StyleSheet.absoluteFillObject}
       />
       <View style={styles.overlay} pointerEvents="none">
+        {/* Viewfinder */}
         <View style={styles.viewfinderContainer}>
           <View style={[styles.viewfinder, { borderColor: theme.primary }]}>
+            {/* Cantos coloridos */}
             <View style={[styles.corner, styles.topLeft, { borderColor: theme.primary }]} />
             <View style={[styles.corner, styles.topRight, { borderColor: theme.primary }]} />
             <View style={[styles.corner, styles.bottomLeft, { borderColor: theme.primary }]} />
             <View style={[styles.corner, styles.bottomRight, { borderColor: theme.primary }]} />
+            {/* Linha de scan animada */}
             <Animated.View style={[styles.scanLine, scanLineStyle, { backgroundColor: theme.primary }]} />
           </View>
         </View>
       </View>
 
+      {/* Loading overlay */}
       {loading && (
         <View style={styles.loadingOverlay}>
           <View style={styles.loadingContent}>

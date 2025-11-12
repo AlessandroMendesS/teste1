@@ -13,17 +13,17 @@ import {
   FlatList
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { servicoEmprestimo, servicoFerramenta } from '../api/servicoApi';
-import { usarAutenticacao } from '../context/ContextoAutenticacao';
+import { emprestimoService, toolService } from '../api/apiService';
+import { useAuth } from '../context/AuthContext';
 import QRCode from 'react-native-qrcode-svg';
-import { usarTema } from '../context/ContextoTema';
-import supabase from '../api/clienteSupabase';
-import { agruparFerramentas, obterFerramentasDisponiveis, obterFerramentasEmprestadas, formatarPatrimonio } from '../utils/agrupamentoFerramentas';
+import { useTheme } from '../context/ThemeContext';
+import supabase from '../api/supabaseClient';
+import { agruparFerramentas, obterFerramentasDisponiveis, obterFerramentasEmprestadas, formatarPatrimonio } from '../utils/toolGrouping';
 
 export default function DetalheFerramenta({ route, navigation }) {
   const { ferramenta: ferramentaInicial, grupo } = route.params || {};
-  const { user } = usarAutenticacao();
-  const { theme } = usarTema();
+  const { user } = useAuth();
+  const { theme } = useTheme();
 
   const [ferramenta, setFerramenta] = useState(ferramentaInicial);
   const [grupoFerramentas, setGrupoFerramentas] = useState(grupo);
@@ -32,7 +32,7 @@ export default function DetalheFerramenta({ route, navigation }) {
   const [loading, setLoading] = useState(false);
   const [podeDevolver, setPodeDevolver] = useState(false);
   const [emprestimoInfo, setEmprestimoInfo] = useState(null);
-  const [emprestimosGrupo, setEmprestimosGrupo] = useState({});
+  const [emprestimosGrupo, setEmprestimosGrupo] = useState({}); // Mapa de ferramenta_id -> emprestimo
   const [erroDevolver, setErroDevolver] = useState('');
   const [mostrarListaFerramentas, setMostrarListaFerramentas] = useState(false);
   const [selectionModeDetalhes, setSelectionModeDetalhes] = useState(false);
@@ -43,7 +43,7 @@ export default function DetalheFerramenta({ route, navigation }) {
     if (!ferramentaInicial?.id) return;
     
     try {
-      const res = await servicoEmprestimo.buscarEmprestimoAberto(ferramentaInicial.id);
+      const res = await emprestimoService.buscarEmprestimoAberto(ferramentaInicial.id);
       if (res && res.success) {
         if (res.emprestimo) {
           setEmprestada(res.emprestimo.status === 'emprestado');
@@ -70,14 +70,17 @@ export default function DetalheFerramenta({ route, navigation }) {
     }
   };
 
+  // Buscar empréstimos de todas as ferramentas do grupo
   const fetchEmprestimosGrupo = async () => {
     if (!grupoFerramentas || !grupoFerramentas.ferramentas) return;
     
     try {
       const emprestimosMap = {};
+      
+      // Buscar empréstimos abertos de todas as ferramentas do grupo
       for (const ferramentaItem of grupoFerramentas.ferramentas) {
         try {
-          const res = await servicoEmprestimo.buscarEmprestimoAberto(ferramentaItem.id);
+          const res = await emprestimoService.buscarEmprestimoAberto(ferramentaItem.id);
           if (res && res.success && res.emprestimo && res.emprestimo.status === 'emprestado') {
             emprestimosMap[ferramentaItem.id] = res.emprestimo;
           }
@@ -92,10 +95,12 @@ export default function DetalheFerramenta({ route, navigation }) {
     }
   };
 
+  // Atualizar grupo quando necessário ou buscar se não foi fornecido
   useEffect(() => {
     if (grupo) {
       setGrupoFerramentas(grupo);
     } else if (ferramentaInicial && !grupoFerramentas) {
+      // Se não há grupo fornecido, buscar se existe grupo para esta ferramenta
       const buscarGrupo = async () => {
         try {
           const { data, error } = await supabase
@@ -128,6 +133,7 @@ export default function DetalheFerramenta({ route, navigation }) {
     }
   }, [ferramentaInicial, user.id]);
 
+  // Buscar empréstimos do grupo quando o grupo mudar
   useEffect(() => {
     if (grupoFerramentas) {
       fetchEmprestimosGrupo();
@@ -145,7 +151,7 @@ export default function DetalheFerramenta({ route, navigation }) {
     setErroDevolver('');
     try {
       const ferramentaAtual = ferramentaParaEmprestar || ferramenta;
-      await servicoEmprestimo.registrarEmprestimo({
+      await emprestimoService.registrarEmprestimo({
         ferramenta_id: ferramentaId,
         usuario_id: user.id,
         local_emprestimo: ferramentaAtual.local || ''
@@ -154,6 +160,7 @@ export default function DetalheFerramenta({ route, navigation }) {
       
       // Se for um grupo, atualizar a lista de ferramentas disponíveis
       if (grupoFerramentas) {
+        // Recarregar dados do grupo
         const { data, error } = await supabase
           .from('ferramentas')
           .select('*')
@@ -167,6 +174,7 @@ export default function DetalheFerramenta({ route, navigation }) {
           );
           if (grupoAtualizado) {
             setGrupoFerramentas(grupoAtualizado);
+            // Atualizar ferramenta atual se necessário
             const ferramentaAtualizada = data.find(f => f.id === ferramentaId);
             if (ferramentaAtualizada) {
               setFerramenta(ferramentaAtualizada);
@@ -196,13 +204,14 @@ export default function DetalheFerramenta({ route, navigation }) {
     setErroDevolver('');
     try {
       const ferramentaAtual = ferramentaParaDevolver || ferramenta;
-      await servicoEmprestimo.registrarDevolucao(emprestimoIdAtual, { 
+      await emprestimoService.registrarDevolucao(emprestimoIdAtual, { 
         local_devolucao: ferramentaAtual?.local || grupoFerramentas?.local || '' 
       });
       alert('Ferramenta devolvida com sucesso!');
       
       // Se for um grupo, atualizar a lista de ferramentas disponíveis
       if (grupoFerramentas) {
+        // Recarregar dados do grupo
         const { data, error } = await supabase
           .from('ferramentas')
           .select('*')
@@ -216,10 +225,12 @@ export default function DetalheFerramenta({ route, navigation }) {
           );
           if (grupoAtualizado) {
             setGrupoFerramentas(grupoAtualizado);
+            // Atualizar ferramenta atual se necessário
             const ferramentaAtualizada = data.find(f => f.id === ferramentaId);
             if (ferramentaAtualizada) {
               setFerramenta(ferramentaAtualizada);
             }
+            // Recarregar empréstimos do grupo
             await fetchEmprestimosGrupo();
           }
         }
@@ -238,12 +249,14 @@ export default function DetalheFerramenta({ route, navigation }) {
     }
   };
 
+  // Devolver todas as ferramentas do grupo que foram emprestadas pelo usuário atual
   const handleDevolverTodas = async () => {
     if (!grupoFerramentas || !grupoFerramentas.ferramentas) {
       alert('Erro: Grupo não encontrado.');
       return;
     }
 
+    // Filtrar ferramentas que podem ser devolvidas pelo usuário atual
     const ferramentasParaDevolver = grupoFerramentas.ferramentas.filter(item => {
       const emprestimoItem = emprestimosGrupo[item.id];
       return emprestimoItem && 
@@ -256,6 +269,7 @@ export default function DetalheFerramenta({ route, navigation }) {
       return;
     }
 
+    // Confirmar ação
     Alert.alert(
       'Devolver Todas',
       `Tem certeza que deseja devolver ${ferramentasParaDevolver.length} ferramenta(s)?`,
@@ -275,11 +289,12 @@ export default function DetalheFerramenta({ route, navigation }) {
               let sucessos = 0;
               let erros = 0;
               
+              // Devolver todas as ferramentas
               for (const ferramentaItem of ferramentasParaDevolver) {
                 const emprestimoItem = emprestimosGrupo[ferramentaItem.id];
                 if (emprestimoItem) {
                   try {
-                    await servicoEmprestimo.registrarDevolucao(emprestimoItem.id, {
+                    await emprestimoService.registrarDevolucao(emprestimoItem.id, {
                       local_devolucao: ferramentaItem?.local || grupoFerramentas?.local || ''
                     });
                     sucessos++;
@@ -290,6 +305,7 @@ export default function DetalheFerramenta({ route, navigation }) {
                 }
               }
 
+              // Recarregar dados do grupo
               const { data, error } = await supabase
                 .from('ferramentas')
                 .select('*')
@@ -303,10 +319,12 @@ export default function DetalheFerramenta({ route, navigation }) {
                 );
                 if (grupoAtualizado) {
                   setGrupoFerramentas(grupoAtualizado);
+                  // Atualizar ferramenta atual se necessário
                   const ferramentaAtualizada = data.find(f => f.id === ferramenta?.id);
                   if (ferramentaAtualizada) {
                     setFerramenta(ferramentaAtualizada);
                   }
+                  // Recarregar empréstimos do grupo
                   await fetchEmprestimosGrupo();
                 }
               }
@@ -351,6 +369,7 @@ export default function DetalheFerramenta({ route, navigation }) {
           onPress: async () => {
             setLoading(true);
             try {
+              // Primeiro, verificar se há empréstimos ativos
               const { data: emprestimos, error: erroEmprestimos } = await supabase
                 .from('emprestimos')
                 .select('id')
@@ -371,6 +390,7 @@ export default function DetalheFerramenta({ route, navigation }) {
                 return;
               }
 
+              // Deletar empréstimos relacionados primeiro (se houver)
               const { error: erroDeleteEmprestimos } = await supabase
                 .from('emprestimos')
                 .delete()
@@ -378,8 +398,10 @@ export default function DetalheFerramenta({ route, navigation }) {
 
               if (erroDeleteEmprestimos) {
                 console.warn('Aviso ao deletar empréstimos:', erroDeleteEmprestimos);
+                // Continuar mesmo com erro, pode não haver empréstimos
               }
 
+              // Tentar deletar via Supabase primeiro
               let deletadoComSucesso = false;
               
               try {
@@ -391,6 +413,7 @@ export default function DetalheFerramenta({ route, navigation }) {
 
                 if (error) {
                   console.log('Erro ao deletar via Supabase direto, tentando via API...', error);
+                  // Se falhar, tentar via backend API
                   throw new Error('Supabase direto falhou, tentando API');
                 }
 
@@ -403,9 +426,10 @@ export default function DetalheFerramenta({ route, navigation }) {
                   return;
                 }
               } catch (supabaseError) {
+                // Se falhar no Supabase direto, tentar via backend API
                 console.log('Tentando deletar via backend API...');
                 try {
-                  const response = await servicoFerramenta.deleteTool(ferramenta.id);
+                  const response = await toolService.deleteTool(ferramenta.id);
                   if (response && response.success) {
                     deletadoComSucesso = true;
                   } else {
@@ -490,6 +514,7 @@ export default function DetalheFerramenta({ route, navigation }) {
 
               for (const ferramentaItem of ferramentasParaExcluir) {
                 try {
+                  // Primeiro, verificar se há empréstimos ativos
                   const { data: emprestimos, error: erroEmprestimos } = await supabase
                     .from('emprestimos')
                     .select('id')
@@ -512,6 +537,7 @@ export default function DetalheFerramenta({ route, navigation }) {
                     continue;
                   }
 
+                  // Deletar empréstimos relacionados primeiro (se houver)
                   const { error: erroDeleteEmprestimos } = await supabase
                     .from('emprestimos')
                     .delete()
@@ -519,8 +545,10 @@ export default function DetalheFerramenta({ route, navigation }) {
 
                   if (erroDeleteEmprestimos) {
                     console.warn(`Aviso ao deletar empréstimos da ferramenta ${ferramentaItem.id}:`, erroDeleteEmprestimos);
+                    // Continuar mesmo com erro, pode não haver empréstimos
                   }
 
+                  // Tentar deletar via Supabase primeiro
                   let deletadoComSucesso = false;
                   
                   try {
@@ -532,6 +560,7 @@ export default function DetalheFerramenta({ route, navigation }) {
 
                     if (error) {
                       console.log(`Erro ao deletar ferramenta ${ferramentaItem.id} via Supabase direto, tentando via API...`, error);
+                      // Se falhar, tentar via backend API
                       throw new Error('Supabase direto falhou, tentando API');
                     }
 
@@ -543,9 +572,10 @@ export default function DetalheFerramenta({ route, navigation }) {
                       return;
                     }
                   } catch (supabaseError) {
+                    // Se falhar no Supabase direto, tentar via backend API
                     console.log(`Tentando deletar ferramenta ${ferramentaItem.id} via backend API...`);
                     try {
-                      const response = await servicoFerramenta.deleteTool(ferramentaItem.id);
+                      const response = await toolService.deleteTool(ferramentaItem.id);
                       if (response && response.success) {
                         deletadoComSucesso = true;
                       } else {
@@ -579,6 +609,7 @@ export default function DetalheFerramenta({ route, navigation }) {
                 }
               }
 
+              // Recarregar dados do grupo
               const { data: updatedData, error: updateError } = await supabase
                 .from('ferramentas')
                 .select('*')
@@ -594,10 +625,12 @@ export default function DetalheFerramenta({ route, navigation }) {
                 );
                 if (grupoAtualizado) {
                   setGrupoFerramentas(grupoAtualizado);
+                  // Atualizar ferramenta atual se necessário
                   const ferramentaAtualizada = updatedData.find(f => f.id === ferramenta?.id);
                   if (ferramentaAtualizada) {
                     setFerramenta(ferramentaAtualizada);
                   }
+                  // Recarregar empréstimos do grupo
                   await fetchEmprestimosGrupo();
                 }
               }
@@ -630,6 +663,7 @@ export default function DetalheFerramenta({ route, navigation }) {
     setSelectedGroupTools([]);
   };
 
+  // Renderização
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}>
@@ -637,6 +671,7 @@ export default function DetalheFerramenta({ route, navigation }) {
           <Ionicons name="chevron-back" size={28} color={theme.primary} />
         </TouchableOpacity>
         <View style={styles.headerActions}>
+          {/* Botão de selecionar: apenas para grupos com 2 ou mais ferramentas e quando a lista está expandida */}
           {grupoFerramentas && grupoFerramentas.total >= 2 && mostrarListaFerramentas && (
             <TouchableOpacity 
               onPress={() => setSelectionModeDetalhes(!selectionModeDetalhes)} 
@@ -653,6 +688,7 @@ export default function DetalheFerramenta({ route, navigation }) {
               >
                 <Ionicons name="create-outline" size={24} color={theme.primary} />
               </TouchableOpacity>
+              {/* Botão de excluir: para ferramentas únicas (sem grupo ou grupo com apenas 1 ferramenta) */}
               {(!grupoFerramentas || (grupoFerramentas.total === 1)) && (
                 <TouchableOpacity 
                   onPress={handleDeletar} 
@@ -677,7 +713,7 @@ export default function DetalheFerramenta({ route, navigation }) {
               disabled={selectedGroupTools.length === 0 || loading}
               activeOpacity={0.8}
             >
-              <Ionicons name="trash-outline" size={16} color="#FFF" />
+              <Ionicons name="trash-outline" size={20} color="#FFF" />
               <Text style={styles.actionButtonTextDetalhes}>Excluir</Text>
             </TouchableOpacity>
             <TouchableOpacity 
@@ -685,7 +721,7 @@ export default function DetalheFerramenta({ route, navigation }) {
               onPress={handleCancelGroupSelection}
               activeOpacity={0.8}
             >
-              <Ionicons name="close-circle-outline" size={16} color="#FFF" />
+              <Ionicons name="close-circle-outline" size={20} color="#FFF" />
               <Text style={styles.actionButtonTextDetalhes}>Cancelar</Text>
             </TouchableOpacity>
           </View>
@@ -707,7 +743,9 @@ export default function DetalheFerramenta({ route, navigation }) {
         </View>
         <Text style={[styles.title, { color: theme.text }]}>{ferramenta?.nome || grupoFerramentas?.nome}</Text>
         
+        {/* Informações do grupo se houver */}
         {grupoFerramentas && grupoFerramentas.total !== undefined && (() => {
+          // Calcular quantas ferramentas o usuário atual pode devolver
           const ferramentasParaDevolver = grupoFerramentas.ferramentas.filter(item => {
             const emprestimoItem = emprestimosGrupo[item.id];
             return emprestimoItem && 
@@ -765,6 +803,7 @@ export default function DetalheFerramenta({ route, navigation }) {
           );
         })()}
 
+        {/* Lista de ferramentas do grupo */}
         {mostrarListaFerramentas && grupoFerramentas && grupoFerramentas.ferramentas && (
           <View style={[styles.listaFerramentasContainer, { backgroundColor: theme.card }]}>
             <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 10 }]}>Ferramentas do Grupo</Text>
@@ -787,6 +826,7 @@ export default function DetalheFerramenta({ route, navigation }) {
                       }
                     });
                   } else {
+                    // Comportamento normal: navegar para detalhes da ferramenta
                     navigation.navigate('DetalheFerramenta', { ferramenta: item });
                   }
                 };
@@ -890,9 +930,11 @@ export default function DetalheFerramenta({ route, navigation }) {
             <Text style={[styles.infoText, { color: theme.text }]}>{ferramenta?.local || grupoFerramentas?.local || 'Não informado'}</Text>
           </View>
         </View>
+        {/* Mensagem de erro do botão devolver */}
         {erroDevolver ? (
           <View style={styles.erroBox}><Text style={styles.erroText}>{erroDevolver}</Text></View>
         ) : null}
+        {/* Botão de Emprestar/Devolver */}
         {!grupoFerramentas && (
           <View style={{ alignItems: 'center', marginBottom: 30 }}>
             {emprestada && podeDevolver ? (
@@ -907,6 +949,7 @@ export default function DetalheFerramenta({ route, navigation }) {
           </View>
         )}
         
+        {/* Botão de emprestar para grupo */}
         {grupoFerramentas && grupoFerramentas.disponivel > 0 && !mostrarListaFerramentas && (
           <View style={{ alignItems: 'center', marginBottom: 30 }}>
             <TouchableOpacity 
@@ -1264,13 +1307,13 @@ const styles = StyleSheet.create({
   actionButtonDetalhes: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 6,
-    gap: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 8,
+    gap: 8,
   },
   actionButtonTextDetalhes: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: '#FFF',
   },

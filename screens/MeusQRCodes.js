@@ -3,14 +3,14 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Sta
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import QRCode from 'react-native-qrcode-svg';
-import supabase from '../api/clienteSupabase';
-import { usarTema } from '../context/ContextoTema';
-import { usarAutenticacao } from '../context/ContextoAutenticacao';
-import { agruparFerramentas, formatarPatrimonio } from '../utils/agrupamentoFerramentas';
+import supabase from '../api/supabaseClient';
+import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
+import { agruparFerramentas, formatarPatrimonio } from '../utils/toolGrouping';
 
 export default function MeusQRCodes({ navigation }) {
-    const { user } = usarAutenticacao();
-    const { theme } = usarTema();
+    const { user } = useAuth();
+    const { theme } = useTheme();
     const [ferramentas, setFerramentas] = useState([]);
     const [ferramentasAgrupadas, setFerramentasAgrupadas] = useState([]);
     const [loading, setLoading] = useState(true);

@@ -14,16 +14,16 @@ import {
   Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { usarTema } from '../context/ContextoTema';
-import { usarAutenticacao } from '../context/ContextoAutenticacao';
+import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import { useFocusEffect } from '@react-navigation/native';
-import supabase from '../api/clienteSupabase';
-import { servicoEmprestimo } from '../api/servicoApi';
-import { formatarPatrimonio } from '../utils/agrupamentoFerramentas';
+import supabase from '../api/supabaseClient';
+import { emprestimoService } from '../api/apiService';
+import { formatarPatrimonio } from '../utils/toolGrouping';
 
 export default function MeusEmprestimos({ navigation }) {
-  const { theme } = usarTema();
-  const { user } = usarAutenticacao();
+  const { theme } = useTheme();
+  const { user } = useAuth();
   const [emprestimos, setEmprestimos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -132,7 +132,7 @@ export default function MeusEmprestimos({ navigation }) {
           onPress: async () => {
             try {
               setDevolvendo(emprestimo.id);
-              await servicoEmprestimo.registrarDevolucao(emprestimo.id, {
+              await emprestimoService.registrarDevolucao(emprestimo.id, {
                 local_devolucao: emprestimo.ferramenta?.local || ''
               });
               
